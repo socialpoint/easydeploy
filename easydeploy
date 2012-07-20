@@ -1,10 +1,34 @@
-#!/bin/bash
+#!/bin/bash -e
 
-if [ "$#" -eq 0 ]
+if [ "$#" == 0 ]
 then
-	echo "usage: easydeploy repo [repopath]" 
+	echo "usage: easydeploy [options] repo
+    -c: check if already installed (if alrady installed, dont install again) 
+    -u: dont update if already exists a version
+    -i: dont install, only update cache" 
 	exit 1
 fi
+
+OPTCHECK=0
+OPTUPDATE=1
+OPTINSTALL=1
+
+while getopts "uic:" flag
+do
+    case $flag in
+        c)
+	    OPTCHECK=$OPTARG
+            ;;
+        u)
+            OPTUPDATE=0
+            ;;
+        i)
+	    OPTINSTALL=0
+            ;;
+    esac
+done
+
+shift $((OPTIND-1))
 
 REPO=$1
 REPOPATH=""
@@ -14,23 +38,37 @@ then
 	REPOPATH=$2
 fi
 
-echo $REPO $REPOPATH end
-
 LOCALPATH=/var/local/easydeploy/cache/$REPO
+INSTALLEDFILEPATH=/var/local/easydeploy/installed/$REPO 
+
+if [ $OPTCHECK -eq 1 ]  && [ -f $INSTALLEDFILEPATH ]
+then
+	echo $REPO already installed
+	exit 0
+fi
 
 if [ -d $LOCALPATH ]
 then
 	cd $LOCALPATH
-	git pull
-	git checkout master
+	if [ $OPTUPDATE -eq 1 ]
+	then
+		git pull
+		git checkout master
+	fi
 else
-	mkdir -p $LOCALPATH
-	cd $LOCALPATH
-	cd ..
-	rmdir $LOCALPATH
-	git clone git://github.com/$REPO 
+	mkdir -p `dirname $LOCALPATH`
+	cd `dirname $LOCALPATH`
+	git clone git@github.com:$REPO.git 
 	cd $LOCALPATH
 fi
 
-./install.sh
+if [ $OPTINSTALL -eq 1 ]
+then
+	./install.sh
+fi
+
+mkdir -p `dirname $INSTALLEDFILEPATH`
+touch $INSTALLEDFILEPATH
+
+
 
