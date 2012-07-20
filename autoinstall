@@ -1,0 +1,3 @@
+#!/bin/bash
+
+curl https://raw.github.com/marccanaleta/easydeploy/master/easydeploy > /tmp/easydeploy && sudo sh /tmp/easydeploy marccanaleta/easydeploy
