@@ -1,0 +1,36 @@
+#!/bin/bash
+
+if [ "$#" -eq 0 ]
+then
+	echo "usage: easydeploy repo [repopath]" 
+	exit 1
+fi
+
+REPO=$1
+REPOPATH=""
+
+if [ "$#" -gt 1 ] 
+then
+	REPOPATH=$2
+fi
+
+echo $REPO $REPOPATH end
+
+LOCALPATH=/var/local/easydeploy/cache/$REPO
+
+if [ -d $LOCALPATH ]
+then
+	cd $LOCALPATH
+	git pull
+	git checkout master
+else
+	mkdir -p $LOCALPATH
+	cd $LOCALPATH
+	cd ..
+	rmdir $LOCALPATH
+	git clone git://github.com/$REPO 
+	cd $LOCALPATH
+fi
+
+./install.sh
+
