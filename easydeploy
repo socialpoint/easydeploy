@@ -47,6 +47,8 @@ then
 	exit 0
 fi
 
+export GIT_SSL_NO_VERIFY=true
+
 if [ -d $LOCALPATH ]
 then
 	cd $LOCALPATH
