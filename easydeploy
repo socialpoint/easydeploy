@@ -60,6 +60,7 @@ then
 	then
 		git pull
 		git checkout master
+		git reset --hard HEAD
 	fi
 else
 	mkdir -p `dirname $LOCALGITPATH`
