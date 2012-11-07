@@ -58,9 +58,9 @@ then
 	cd $LOCALGITPATH
 	if [ $OPTUPDATE -eq 1 ]
 	then
+		git reset --hard HEAD
 		git pull
 		git checkout master
-		git reset --hard HEAD
 	fi
 else
 	mkdir -p `dirname $LOCALGITPATH`
