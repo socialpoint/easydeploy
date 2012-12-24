@@ -29,7 +29,7 @@ print args
 root = '/var/local/easydeploy'
 cwd = os.getcwd()
 cacheroot = root + '/cache'
-tmpfolder = '/tmp/easydeploy/' + str(os.getpid())
+tmpfolder = '/tmp/_tmp_easydeploy/' + str(os.getpid())
 dbfile = root + '/db.json'
 if (os.path.exists(dbfile)):
     f = open(dbfile, 'r')
