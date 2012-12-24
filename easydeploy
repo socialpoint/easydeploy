@@ -1,80 +1,64 @@
-#!/bin/bash -e
+#! /usr/bin/python
 
-if [ "$#" == 0 ]
-then
-	echo "usage: easydeploy [options] repo [repopath]
-    -c: check if already installed (if alrady installed, dont install again) 
-    -u: dont update if already exists a version
-    -i: dont install, only update cache" 
-	exit 1
-fi
-
-OPTCHECK=0
-OPTUPDATE=1
-OPTINSTALL=1
-
-while getopts "uic:" flag
-do
-    case $flag in
-        c)
-	    OPTCHECK=$OPTARG
-            ;;
-        u)
-            OPTUPDATE=0
-            ;;
-        i)
-	    OPTINSTALL=0
-            ;;
-    esac
-done
-
-shift $((OPTIND-1))
-
-REPO=$1
-LOCALGITPATH=/var/local/easydeploy/cache/$REPO
-LOCALPROJECTPATH=$LOCALGITPATH
-REPOPATH=""
-
-if [ "$#" -gt 1 ] 
-then
-	REPOPATH=$2
-	LOCALPROJECTPATH=$LOCALGITPATH/$REPOPATH
-	INSTALLEDFILEPATH=/var/local/easydeploy/installed/$REPO/$REPOPATH/installed 
-else
-	INSTALLEDFILEPATH=/var/local/easydeploy/installed/$REPO/installed
-fi
+import argparse
+import re
+import os
+import sys
+import json
 
 
-if [ $OPTCHECK -eq 1 ]  && [ -f $INSTALLEDFILEPATH ]
-then
-	echo $REPO/$REPOPATH already installed
-	exit 0
-fi
+root = './var/local/easydeploy'
+cacheroot = root + '/cache'
+tmpfolder = './tmp/easydeploy/' + str(os.getpid())
+dbfile = root + '/db.json'
+if (os.path.exists(dbfile)):
+    f = open(dbfile, 'r')
+    db = json.load(f)
+    f.close()
+else:
+    db = json.loads('{}')
 
-export GIT_SSL_NO_VERIFY=true
+print tmpfolder
+os.makedirs(tmpfolder)
 
-if [ -d $LOCALGITPATH ]
-then
-	cd $LOCALGITPATH
-	if [ $OPTUPDATE -eq 1 ]
-	then
-		git reset --hard HEAD
-		git pull
-		git checkout master
-	fi
-else
-	mkdir -p `dirname $LOCALGITPATH`
-	cd `dirname $LOCALGITPATH`
-	git clone git@github.com:$REPO.git 
-fi
+print tmpfolder
 
-cd $LOCALPROJECTPATH
 
-if [ $OPTINSTALL -eq 1 ]
-then
-	./install.sh
-fi
+parser = argparse.ArgumentParser(description='Deploy a package.')
 
-mkdir -p `dirname $INSTALLEDFILEPATH`
-touch $INSTALLEDFILEPATH
+parser.add_argument('-c', help='check if already installed (if alrady installed, dont install again)')
+parser.add_argument('-u', help='dont update if already exists a version', type=int, default=1)
+parser.add_argument('-i', help='dont install, only update cache')
+parser.add_argument('url', help='url of the package to install (git, s3, http)')
 
+args = parser.parse_args()
+
+url = args.url
+cachepath = cacheroot + '/' + re.sub('[@:?/]+','/',url)
+if re.match('s3://', url):
+    print 's3'
+    filename = tmpfolder + '/file.tar.gz'
+    os.system('s3cmd get ' + url + ' ' + filename)
+    os.system('rm -rf ' + cachepath)
+    os.makedirs(cachepath)
+    os.system('tar xvfz ' + filename + ' -C ' + cachepath)
+elif re.match('http(s?)://', url):
+    print 'http'
+else:
+    print 'git'
+    if (os.path.exists(cachepath + '/.git')):
+        if (args.u):
+            os.chdir(cachepath)
+            os.system('git reset --hard HEAD')
+            os.system('git pull')
+            os.system('git checkout master')
+    else:
+        os.system('rm -rf ' + cachepath)
+        os.makedirs(cachepath)
+        os.system('git clone ' + url + ' ' + cachepath)    
+
+print cachepath
+
+f = open(dbfile, 'w')
+json.dump(db, f)
+f.close()
