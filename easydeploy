@@ -7,9 +7,29 @@ import sys
 import json
 
 
-root = './var/local/easydeploy'
+
+
+parser = argparse.ArgumentParser(description='Deploy a package.')
+
+parser.add_argument('-c', help='check if already installed (if alrady installed, dont install again)', action='store_true', default=False)
+parser.add_argument('-u', help='dont update if already exists a version', action='store_false', default=True)
+parser.add_argument('-i', help='dont install, only update cache', action='store_true', default=False)
+parser.add_argument('-o', help='package options', type=str, default='')
+parser.add_argument('-p', help='path inside package where install.sh is located', type=str, default='')
+parser.add_argument('-b', help='branch to clone (only applies to git)', type=str, default='master')
+parser.add_argument('url', help='url of the package to install (git, s3, http)')
+
+args = parser.parse_args()
+
+args.p = re.sub('^/*','', args.p)
+args.p = re.sub('\.\.','', args.p)
+
+print args
+
+root = '/var/local/easydeploy'
+cwd = os.getcwd()
 cacheroot = root + '/cache'
-tmpfolder = './tmp/easydeploy/' + str(os.getpid())
+tmpfolder = '/tmp/easydeploy/' + str(os.getpid())
 dbfile = root + '/db.json'
 if (os.path.exists(dbfile)):
     f = open(dbfile, 'r')
@@ -18,20 +38,7 @@ if (os.path.exists(dbfile)):
 else:
     db = json.loads('{}')
 
-print tmpfolder
 os.makedirs(tmpfolder)
-
-print tmpfolder
-
-
-parser = argparse.ArgumentParser(description='Deploy a package.')
-
-parser.add_argument('-c', help='check if already installed (if alrady installed, dont install again)')
-parser.add_argument('-u', help='dont update if already exists a version', type=int, default=1)
-parser.add_argument('-i', help='dont install, only update cache')
-parser.add_argument('url', help='url of the package to install (git, s3, http)')
-
-args = parser.parse_args()
 
 url = args.url
 cachepath = cacheroot + '/' + re.sub('[@:?/]+','/',url)
@@ -51,14 +58,22 @@ else:
             os.chdir(cachepath)
             os.system('git reset --hard HEAD')
             os.system('git pull')
-            os.system('git checkout master')
+            os.system('git checkout ' + args.b)
+            os.chdir(cwd)
     else:
         os.system('rm -rf ' + cachepath)
         os.makedirs(cachepath)
-        os.system('git clone ' + url + ' ' + cachepath)    
+        os.system('git clone -b ' + args.b + ' ' + url + ' ' + cachepath)    
 
-print cachepath
+if (not args.i):
+    os.chdir(cachepath)
+    if (args.p):
+        os.chdir(p)
+    print('./install.sh ' + args.o)
+    os.chdir(cwd)
 
 f = open(dbfile, 'w')
 json.dump(db, f)
 f.close()
+
+os.system('rm -rf ' + tmpfolder)
