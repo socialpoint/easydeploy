@@ -68,7 +68,7 @@ else:
 if (not args.i):
     os.chdir(cachepath)
     if (args.p):
-        os.chdir(p)
+        os.chdir(args.p)
     os.system('./install.sh ' + args.o)
     os.chdir(cwd)
 
