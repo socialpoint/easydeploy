@@ -6,31 +6,34 @@ import os
 import sys
 import json
 
-
-
+# Arguments
 
 parser = argparse.ArgumentParser(description='Deploy a package.')
 
 parser.add_argument('-c', help='check if already installed (if alrady installed, dont install again)', action='store_true', default=False)
 parser.add_argument('-u', help='dont update if already exists a version', action='store_false', default=True)
-parser.add_argument('-i', help='dont install, only update cache', action='store_true', default=False)
+parser.add_argument('-i', help='dont install, only update cache', action='store_false', default=True)
 parser.add_argument('-o', help='package options', type=str, default='')
 parser.add_argument('-p', help='path inside package where install.sh is located', type=str, default='')
 parser.add_argument('-b', help='branch to clone (only applies to git)', type=str, default='master')
+parser.add_argument('-t', help='type of repository', choices=['git','s3','http'])
 parser.add_argument('url', help='url of the package to install (git, s3, http)')
 
 args = parser.parse_args()
 
+# Remove dangerous sequences in path (.., ^/)
 args.p = re.sub('^/*','', args.p)
 args.p = re.sub('\.\.','', args.p)
 
-print args
-
+# Some variables
 root = '/var/local/easydeploy'
 cwd = os.getcwd()
 cacheroot = root + '/cache'
 tmpfolder = '/tmp/_tmp_easydeploy/' + str(os.getpid())
 dbfile = root + '/db.json'
+url = args.url
+
+# DB File
 if (os.path.exists(dbfile)):
     f = open(dbfile, 'r')
     db = json.load(f)
@@ -38,21 +41,48 @@ if (os.path.exists(dbfile)):
 else:
     db = json.loads('{}')
 
-os.makedirs(tmpfolder)
+if (not 'packages' in db): db['packages'] = {}
+if (not url in db['packages']): db['packages'][url] = {}
 
-url = args.url
+
+# Check intalled
+if (args.c):
+    if (db['packages'][url].has_key('installed')):
+        print 'Package ' + url + ' already installed'
+        exit(0)
+
+# Download phase
+os.makedirs(tmpfolder)
 cachepath = cacheroot + '/' + re.sub('[@:?/]+','/',url)
-if re.match('s3://', url):
-    print 's3'
-    filename = tmpfolder + '/file.tar.gz'
-    os.system('s3cmd get ' + url + ' ' + filename)
-    os.system('rm -rf ' + cachepath)
-    os.makedirs(cachepath)
-    os.system('tar xvfz ' + filename + ' -C ' + cachepath)
-elif re.match('http(s?)://', url):
-    print 'http'
+t = args.t
+if (t is None):
+    if re.match('s3://', url):
+        t = 's3'
+    elif re.match('http(s?)://', url):
+        t = 'http'
+    else:
+        t = 'git'
+
+if (t == 'http'):
+    print 'Downloading S3 package ' + url
+    if (not os.path.exists(cachepath) or args.u):
+        filename = tmpfolder + '/file.tar.gz'
+        os.system('s3cmd get ' + url + ' ' + filename)
+        os.system('rm -rf ' + cachepath)
+        os.makedirs(cachepath)
+        os.system('tar xvfz ' + filename + ' -C ' + cachepath)
+
+elif (t == 'http'):
+    print 'Downloading HTTP package ' + url
+    if (not os.path.exists(cachepath) or args.u):
+        filename = tmpfolder + '/file.tar.gz'
+        os.system('wget -O ' + filename + ' ' + url)
+        os.system('rm -rf ' + cachepath)
+        os.makedirs(cachepath)
+        os.system('tar xvfz ' + filename + ' -C ' + cachepath)
+
 else:
-    print 'git'
+    print 'Downloading git repository ' + url
     if (os.path.exists(cachepath + '/.git')):
         if (args.u):
             os.chdir(cachepath)
@@ -65,15 +95,19 @@ else:
         os.makedirs(cachepath)
         os.system('git clone -b ' + args.b + ' ' + url + ' ' + cachepath)    
 
-if (not args.i):
+# Installation phase
+if (args.i):
     os.chdir(cachepath)
     if (args.p):
         os.chdir(args.p)
     os.system('./install.sh ' + args.o)
     os.chdir(cwd)
 
+# Save DB
+db['packages'][url]['installed'] = True
 f = open(dbfile, 'w')
 json.dump(db, f)
 f.close()
 
+# Clean
 os.system('rm -rf ' + tmpfolder)
