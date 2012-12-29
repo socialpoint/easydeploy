@@ -63,7 +63,7 @@ if (t is None):
     else:
         t = 'git'
 
-if (t == 'http'):
+if (t == 's3'):
     print 'Downloading S3 package ' + url
     if (not os.path.exists(cachepath) or args.u):
         filename = tmpfolder + '/file.tar.gz'
