@@ -70,7 +70,7 @@ if (t == 's3'):
         os.system('s3cmd get ' + url + ' ' + filename)
         os.system('rm -rf ' + cachepath)
         os.makedirs(cachepath)
-        os.system('tar xvfz ' + filename + ' -C ' + cachepath)
+        os.system('tar xfz ' + filename + ' -C ' + cachepath)
 
 elif (t == 'http'):
     print 'Downloading HTTP package ' + url
@@ -79,7 +79,7 @@ elif (t == 'http'):
         os.system('wget -O ' + filename + ' ' + url)
         os.system('rm -rf ' + cachepath)
         os.makedirs(cachepath)
-        os.system('tar xvfz ' + filename + ' -C ' + cachepath)
+        os.system('tar xfz ' + filename + ' -C ' + cachepath)
 
 else:
     print 'Downloading git repository ' + url
