@@ -67,40 +67,52 @@ if (t == 's3'):
     print 'Downloading S3 package ' + url
     if (not os.path.exists(cachepath) or args.u):
         filename = tmpfolder + '/file.tar.gz'
-        os.system('s3cmd get ' + url + ' ' + filename)
-        os.system('rm -rf ' + cachepath)
+        if os.system('s3cmd get ' + url + ' ' + filename) != 0:
+            raise Exception('Failed wget')
+        if os.system('rm -rf ' + cachepath) != 0:
+            raise Exception('Failed rm cachepath')
         os.makedirs(cachepath)
-        os.system('tar xfz ' + filename + ' -C ' + cachepath)
+        if os.system('tar xfz ' + filename + ' -C ' + cachepath) != 0:
+            raise Exception('Failed tar')
 
 elif (t == 'http'):
     print 'Downloading HTTP package ' + url
     if (not os.path.exists(cachepath) or args.u):
         filename = tmpfolder + '/file.tar.gz'
-        os.system('wget -O ' + filename + ' ' + url)
-        os.system('rm -rf ' + cachepath)
+        if os.system('wget -O ' + filename + ' ' + url) != 0:
+            raise Exception('Failed wget')
+        if os.system('rm -rf ' + cachepath) != 0:
+            raise Exception('Failed rm cachepath')
         os.makedirs(cachepath)
-        os.system('tar xfz ' + filename + ' -C ' + cachepath)
+        if os.system('tar xfz ' + filename + ' -C ' + cachepath) != 0:
+            raise Exception('Failed to tar')
 
 else:
     print 'Downloading git repository ' + url
     if (os.path.exists(cachepath + '/.git')):
         if (args.u):
             os.chdir(cachepath)
-            os.system('git reset --hard HEAD')
-            os.system('git pull')
-            os.system('git checkout ' + args.b)
+            if os.system('git reset --hard HEAD') != 0:
+                raise Exception('Failed git reset')
+            if os.system('git pull') != 0:
+                raise Exception('Failed git pull')
+            if os.system('git checkout ' + args.b) != 0:
+                raise Exception('Failed git checkout')
             os.chdir(cwd)
     else:
-        os.system('rm -rf ' + cachepath)
+        if os.system('rm -rf ' + cachepath) != 0:
+            raise Exception('Failed rm cachepath')
         os.makedirs(cachepath)
-        os.system('git clone -b ' + args.b + ' ' + url + ' ' + cachepath)    
+        if os.system('git clone -b ' + args.b + ' ' + url + ' ' + cachepath) != 0:
+            raise Exception('Failed git clone')
 
 # Installation phase
 if (args.i):
     os.chdir(cachepath)
     if (args.p):
         os.chdir(args.p)
-    os.system('./install.sh ' + args.o)
+    if os.system('./install.sh ' + args.o) != 0:
+        raise Exception('Failed install.sh')
     os.chdir(cwd)
 
 # Save DB
@@ -110,4 +122,5 @@ json.dump(db, f)
 f.close()
 
 # Clean
-os.system('rm -rf ' + tmpfolder)
+if os.system('rm -rf ' + tmpfolder) != 0:
+    raise Exception('Failed rm tmpfolder')
