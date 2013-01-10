@@ -60,7 +60,7 @@ if (t is None):
         t = 's3'
     elif re.match('http(s?)://', url):
         t = 'http'
-    elif re.match('git://', url):
+    elif re.match('git://', url or 'git@', url):
         t = 'git'
     else: 
         raise Exception('Unkown protocol "%s"' % url)
