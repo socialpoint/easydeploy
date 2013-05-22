@@ -4,7 +4,7 @@ import argparse
 import re
 import os
 import sys
-import json
+import pickle
 
 # Arguments
 
@@ -26,20 +26,20 @@ args.p = re.sub('^/*','', args.p)
 args.p = re.sub('\.\.','', args.p)
 
 # Some variables
-root = '/var/local/easydeploy'
+root = '/tmp/var/local/easydeploy'
 cwd = os.getcwd()
 cacheroot = root + '/cache'
 tmpfolder = '/tmp/_tmp_easydeploy/' + str(os.getpid())
-dbfile = root + '/db.json'
+dbfile = root + '/db.pickle'
 url = args.url
 
 # DB File
 if (os.path.exists(dbfile)):
     f = open(dbfile, 'r')
-    db = json.load(f)
+    db = pickle.load(f)
     f.close()
 else:
-    db = json.loads('{}')
+    db = {}
 
 if (not 'packages' in db): db['packages'] = {}
 if (not url in db['packages']): db['packages'][url] = {}
@@ -120,7 +120,7 @@ if (args.i):
 # Save DB
 db['packages'][url]['installed'] = True
 f = open(dbfile, 'w')
-json.dump(db, f)
+pickle.dump(db, f)
 f.close()
 
 # Clean
