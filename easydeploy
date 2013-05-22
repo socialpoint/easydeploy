@@ -70,7 +70,7 @@ if (t == 's3'):
     if (not os.path.exists(cachepath) or args.u):
         filename = tmpfolder + '/file.tar.gz'
         if os.system('s3cmd get ' + url + ' ' + filename) != 0:
-            raise Exception('Failed wget')
+            raise Exception('Failed s3cmd')
         if os.system('rm -rf ' + cachepath) != 0:
             raise Exception('Failed rm cachepath')
         os.makedirs(cachepath)
