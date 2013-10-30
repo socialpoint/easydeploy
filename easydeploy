@@ -69,7 +69,7 @@ if (t == 's3'):
     print 'Downloading S3 package ' + url
     if (not os.path.exists(cachepath) or args.u):
         filename = tmpfolder + '/file.tar.gz'
-        if os.system('s3cmd get ' + url + ' ' + filename) != 0:
+        if os.system('s3cmd --no-progress get ' + url + ' ' + filename) != 0:
             raise Exception('Failed s3cmd')
         if os.system('rm -rf ' + cachepath) != 0:
             raise Exception('Failed rm cachepath')
